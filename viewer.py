@@ -72,7 +72,7 @@ class AndroidViewer(ControlMixin):
 
         dummy_byte = self.video_socket.recv(1)
         if not len(dummy_byte):
-            raise ConnectionError("Did not recieve Dummy Byte!")
+            raise ConnectionError("Did not receive Dummy Byte!")
 
         logger.info("Connecting control socket")
         self.control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -81,7 +81,7 @@ class AndroidViewer(ControlMixin):
         device_name = self.video_socket.recv(64).decode("utf-8")
 
         if not len(device_name):
-            raise ConnectionError("Did not recieve Device Name!")
+            raise ConnectionError("Did not receive Device Name!")
         logger.info("Device Name: " + device_name)
 
         res = self.video_socket.recv(4)
