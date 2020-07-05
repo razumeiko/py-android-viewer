@@ -85,7 +85,7 @@ class AndroidViewer(ControlMixin):
         res = self.video_socket.recv(4)
         self.resolution = struct.unpack(">HH", res)
         logger.info("Screen resolution: %s", self.resolution)
-        self.video_socket.setblocking(False)
+        self.video_socket.setblocking(True)
 
     def deploy_server(self, max_width=1024, bitrate=8000000, max_fps=0):
         try:
@@ -131,6 +131,8 @@ class AndroidViewer(ControlMixin):
 
         try:
             raw_h264 = self.video_socket.recv(0x10000)
+            if(raw_h264 == b''):
+                return None
             packets = self.codec.parse(raw_h264)
 
             if not packets:
