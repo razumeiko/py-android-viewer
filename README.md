@@ -1,6 +1,6 @@
 # py android viewer
 
-This package allows you to get video stream from android device.
+This package allows you to get video stream from the android device.
 
 Stream frames already converted to numpy array using [PyAV](https://github.com/mikeboers/PyAV)
 
@@ -9,14 +9,19 @@ Also this package allows you to send touch events to devices.
 
 ### How it works
 I am using [scrcpy](https://github.com/Genymobile/scrcpy) server and connect to two sockets, video and control sockets.
-Video stream has almost no delay because i am not using separate process of `ffmpeg` and use direct bindings to `ffmpeg` to decode video.
+Video stream has almost no delay because I am not using separate process of `ffmpeg` and use direct bindings to `ffmpeg` to decode video.
+
+Check class and class method arguments for more details.
 
 ### Requirements 
-[PyAV](http://docs.mikeboers.com/pyav/develop/overview/installation.html)
+Python Package [PyAV](http://docs.mikeboers.com/pyav/develop/overview/installation.html)
 
-[ffmpeg](http://ffmpeg.org/)
+Installed [ffmpeg](http://ffmpeg.org/)
 
+And installed [ADB](https://developer.android.com/tools/adb) on your system.  
 
+Default ADB path is set to `/usr/local/bin/adb` but it might be different on your system.
+You can change it by providing `adb_path` argument to AndroidViewer constructor.
 
 ### Examples
 ```python
@@ -24,7 +29,7 @@ import cv2
 from viewer import AndroidViewer
 
 # This will deploy and run server on android device connected to USB
-android = AndroidViewer()
+android = AndroidViewer(adb_path='/usr/local/bin/adb')
 
 while True:
     frames = android.get_next_frames()

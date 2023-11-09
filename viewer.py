@@ -9,12 +9,15 @@ from time import sleep
 
 import av
 
-from .control import ControlMixin
+from control import ControlMixin
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(stream=sys.stdout, level=logging.INFO,
-                    format='%(asctime)s.%(msecs)03d %(levelname)s:\t%(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S')
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.INFO,
+    format='%(asctime)s.%(msecs)03d %(levelname)s:\t%(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+)
 
 
 class AndroidViewer(ControlMixin):
@@ -24,8 +27,15 @@ class AndroidViewer(ControlMixin):
 
     video_data_queue = Queue()
 
-    def __init__(self, max_width=0, bitrate=8000000, max_fps=30, adb_path='/usr/local/bin/adb',
-                 ip='127.0.0.1', port=8081):
+    def __init__(
+        self,
+        max_width: int = 0,
+        bitrate: int = 8000000,
+        max_fps: int = 30,
+        adb_path: str = '/usr/local/bin/adb',
+        ip: str = '127.0.0.1',
+        port: int = 8081,
+    ):
         """
 
         :param max_width: frame width that will be broadcast from android server
@@ -45,7 +55,6 @@ class AndroidViewer(ControlMixin):
         self.codec = av.codec.CodecContext.create('h264', 'r')
         self.init_server_connection()
 
-
     def receiver(self):
         """
         Read h264 video data from video socket and put it in Queue.
@@ -64,59 +73,66 @@ class AndroidViewer(ControlMixin):
         Connect to android server, there will be two sockets, video and control socket.
         This method will set: video_socket, control_socket, resolution variables
         """
-        logger.info("Connecting video socket")
+        logger.info('Connecting video socket')
         self.video_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.video_socket.connect((self.ip, self.port))
 
         dummy_byte = self.video_socket.recv(1)
         if not len(dummy_byte):
-            raise ConnectionError("Did not receive Dummy Byte!")
+            raise ConnectionError('Did not receive Dummy Byte!')
 
-        logger.info("Connecting control socket")
+        logger.info('Connecting control socket')
         self.control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.control_socket.connect((self.ip, self.port))
 
-        device_name = self.video_socket.recv(64).decode("utf-8")
+        device_name = self.video_socket.recv(64).decode('utf-8')
 
         if not len(device_name):
-            raise ConnectionError("Did not receive Device Name!")
-        logger.info("Device Name: " + device_name)
+            raise ConnectionError('Did not receive Device Name!')
+        logger.info(f'Device Name: {device_name}')
 
         res = self.video_socket.recv(4)
-        self.resolution = struct.unpack(">HH", res)
-        logger.info("Screen resolution: %s", self.resolution)
+        self.resolution = struct.unpack('>HH', res)
+        logger.info(f'Screen resolution: {self.resolution}')
         self.video_socket.setblocking(False)
 
-    def deploy_server(self, max_width=1024, bitrate=8000000, max_fps=0):
+    def deploy_server(self, max_width: int = 1024, bitrate: int = 8000000, max_fps: int = 0):
         try:
-            logger.info("Upload JAR...")
+            logger.info('Upload JAR...')
 
             server_root = os.path.abspath(os.path.dirname(__file__))
             server_file_path = server_root + '/scrcpy-server.jar'
-            adb_push = subprocess.Popen([self.adb_path, 'push', server_file_path, '/data/local/tmp/'],
-                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=server_root)
-            adb_push_comm = ''.join([x.decode("utf-8") for x in adb_push.communicate() if x is not None])
+            adb_push = subprocess.Popen(
+                [self.adb_path, 'push', server_file_path, '/data/local/tmp/'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                cwd=server_root,
+            )
+            adb_push_comm = ''.join([x.decode('utf-8') for x in adb_push.communicate() if x is not None])
 
-            if "error" in adb_push_comm:
-                logger.critical("Is your device/emulator visible to ADB?")
+            if 'error' in adb_push_comm:
+                logger.critical('Is your device/emulator visible to ADB?')
                 raise Exception(adb_push_comm)
 
-            logger.info("Running server...")
+            logger.info('Running server...')
             subprocess.Popen(
-                [self.adb_path, 'shell',
-                 'CLASSPATH=/data/local/tmp/scrcpy-server.jar',
-                 'app_process', '/', 'com.genymobile.scrcpy.Server 1.12.1 {} {} {} true - false true'.format(
-                    max_width, bitrate, max_fps)],
-                cwd=server_root)
+                [
+                    self.adb_path,
+                    'shell',
+                    'CLASSPATH=/data/local/tmp/scrcpy-server.jar',
+                    'app_process',
+                    '/',
+                    f'com.genymobile.scrcpy.Server 1.12.1 {max_width} {bitrate} {max_fps} true - false true',
+                ],
+                cwd=server_root,
+            )
             sleep(1)
 
-            logger.info("Forward server port...")
-            subprocess.Popen(
-                [self.adb_path, 'forward', 'tcp:8081', 'localabstract:scrcpy'],
-                cwd=server_root).wait()
+            logger.info('Forward server port...')
+            subprocess.Popen([self.adb_path, 'forward', 'tcp:8081', 'localabstract:scrcpy'], cwd=server_root).wait()
             sleep(2)
         except FileNotFoundError:
-            raise FileNotFoundError("Couldn't find ADB at path ADB_bin: " + str(self.adb_path))
+            raise FileNotFoundError(f"Couldn't find ADB at path ADB_bin: {str(self.adb_path)}")
 
         return True
 
@@ -147,6 +163,6 @@ class AndroidViewer(ControlMixin):
         for packet in packets:
             frames = self.codec.decode(packet)
             for frame in frames:
-                result_frames.append(frame.to_ndarray(format="bgr24"))
+                result_frames.append(frame.to_ndarray(format='bgr24'))
 
         return result_frames or None
